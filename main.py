@@ -7,37 +7,25 @@ import asyncio
 class Semaphore:
     def __init__(self, value=1):
         if value < 0:
-            raise ValueError("ValueError")
+            raise ValueError("Semaphore initial value cannot be negative")
         self.value = value
-        self.waiting = [] # List of tokens
+        self.waiting = []
 
     async def acquire(self):
         if self.value > 0:
             self.value -= 1
             return True
-        
-       
-        curr_task = asyncio.current_task() if hasattr(asyncio, 'current_task') else None
+        curr_task = asyncio.current_task() if hasattr(asyncio, 'current_task') else id(self)
         self.waiting.append(curr_task)
-        
-        # Create an event for waiting
-        ev = asyncio.Event()
-        async def wait_placeholder():
-            await ev.wait()
-            
-        # Pending loop
-        while self.value <= 0:
-            await asleep_ms(10) # Wait until token is released
-            if curr_task not in self.waiting: 
-                break
-                
-        self.value -= 1
+        while curr_task in self.waiting:
+            await asleep_ms(10)
         return True
 
     def release(self):
-        self.value += 1
         if self.waiting:
-            task = self.waiting.pop(0)
+            self.waiting.pop(0)
+        else:
+            self.value += 1
 
 led_D13        = Pins(D13_PIN)
 heater_led     = RGBLed(D3_PIN, 4)  
