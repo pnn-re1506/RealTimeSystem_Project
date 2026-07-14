@@ -44,17 +44,26 @@ heater_sem = Semaphore(0)   # signal: new data for heater
 cooler_sem = Semaphore(0)   # signal: new data for cooler
 humi_sem   = Semaphore(0)   # signal: new data for humidifier
 lcd_sem    = Semaphore(0)   # signal: new data for LCD
+data_mutex = Semaphore(1)  # mutex
 
 HEATER_COLD   = 20    # T < 20 → RED
 HEATER_HOT    = 28    # T >= 28 → ORANGE
 COOLER_THRESH = 28    # T > 28 → activate cooler
 HUMI_THRESH   = 50    # H < 50% → activate humidifier
 
+# Timing (ms)
+SENSOR_INTERVAL_MS = 5000
+BLINKY_INTERVAL_MS = 1000
+COOLER_DURATION_MS = 5000
+HUMI_GREEN_MS  = 5000
+HUMI_YELLOW_MS = 3000
+HUMI_RED_MS    = 2000
+
 # Colors (hex)
 COLOR_OFF    = '#000000'
 COLOR_RED    = '#ff0000'
 COLOR_GREEN  = '#00ff00'
-COLOR_ORANGE = '#ff8c00'
+COLOR_ORANGE = '#ff0500'
 COLOR_YELLOW = '#ffff00'
 
 def make_sensor_data(temp, humi):
