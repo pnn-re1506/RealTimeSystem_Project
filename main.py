@@ -98,10 +98,37 @@ async def task_read_sensor():
 async def task_lcd(): ...
 
 # Task 4: Heater — 3-color threshold indicator
-async def task_heater(): ...
+async def task_heater():
+    while True:
+        await heater_sem.acquire()
+        data = heater_queue.pop(0)
+        temp = data['temperature']
+
+        if temp < HEATER_COLD:
+            heater_led.show(0, hex_to_rgb(COLOR_RED))
+        elif temp < HEATER_HOT:
+            heater_led.show(0, hex_to_rgb(COLOR_GREEN))
+        else:
+            heater_led.show(0, hex_to_rgb(COLOR_ORANGE))
 
 # Task 5: Cooler — GREEN 5s if temp > threshold
-async def task_cooler(): ...
+async def task_cooler():
+    state = 'IDLE'
+    while True:
+        if state == 'IDLE':
+            await cooler_sem.acquire()
+            data = cooler_queue.pop(0)
+            if data['temperature'] > COOLER_THRESH:
+                state = 'COOLING'
+            else:
+                cooler_led.show(0, hex_to_rgb(COLOR_OFF))
+
+        elif state == 'COOLING':
+            cooler_led.show(0, hex_to_rgb(COLOR_GREEN))
+            await asleep_ms(COOLER_DURATION_MS)
+            cooler_led.show(0, hex_to_rgb(COLOR_OFF))
+            state = 'IDLE'
+
 
 # Task 6: Humidifier — state machine GREEN→YELLOW→RED
 async def task_humidifier():
