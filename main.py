@@ -1,48 +1,28 @@
+import asyncio
 from yolo_uno import *
 from pins import *
 from lcd1602 import *
 from dht20 import *
 
-
-
-import asyncio
-
 class Semaphore:
     def __init__(self, value=1):
         if value < 0:
-            raise ValueError("ValueError")
+            raise ValueError("Semaphore value cannot be negative")
+
         self.value = value
-        self.waiting = [] # List of tokens
 
     async def acquire(self):
-        if self.value > 0:
-            self.value -= 1
-            return True
-        
-       
-        curr_task = asyncio.current_task() if hasattr(asyncio, 'current_task') else None
-        self.waiting.append(curr_task)
-        
-        # Create an event for waiting
-        ev = asyncio.Event()
-        async def wait_placeholder():
-            await ev.wait()
-            
-        # Pending loop
         while self.value <= 0:
-            await asleep_ms(10) # Wait until token is released
-            if curr_task not in self.waiting: 
-                break
-                
+            await asleep_ms(10)
+
         self.value -= 1
         return True
 
     def release(self):
-        self.value += 1
-        if self.waiting:
-            # Release a token
-            task = self.waiting.pop(0)
-# =====================================================================
+        # Use as a binary semaphore/mutex
+        if self.value < 1:
+            self.value += 1
+
 
 queue = []
 MAX_ITEMS = 5
