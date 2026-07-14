@@ -78,7 +78,21 @@ def enqueue(queue, sem, data):
 async def task_blinky(): ...
 
 # Task 2: Read Sensor — DHT20 every 5s, enqueue to all consumers
-async def task_read_sensor(): ...
+async def task_read_sensor():
+    await data_mutex.acquire()
+        temp = await dht20.atemperature()
+        humi = await dht20.ahumidity()
+        data_mutex.release()
+
+        print('TEMP:', temp, '°C | HUMI:', humi, '%')
+
+        data = make_sensor_data(temp, humi)
+            
+        if len(humi_queue) == 0:
+            humi_queue.append(data)
+            humi_sem.release()
+
+        await asleep_ms(SENSOR_INTERVAL_MS)
 
 # Task 3: LCD Display — show temp & humidity
 async def task_lcd(): ...
@@ -90,7 +104,34 @@ async def task_heater(): ...
 async def task_cooler(): ...
 
 # Task 6: Humidifier — state machine GREEN→YELLOW→RED
-async def task_humidifier(): ...
+async def task_humidifier():
+    state = 'IDLE'
+    while True:
+        if state == 'IDLE':
+            await humi_sem.acquire()
+            data = humi_queue[0]
+            if data['humidity'] < HUMI_THRESH:
+                state = 'PHASE_GREEN'
+            else:
+                humidifier_led.show(0, hex_to_rgb(COLOR_OFF))
+                humi_queue.pop(0)
+
+        elif state == 'PHASE_GREEN':
+            humidifier_led.show(0, hex_to_rgb(COLOR_GREEN))
+            await asleep_ms(HUMI_GREEN_MS)
+            state = 'PHASE_YELLOW'
+
+        elif state == 'PHASE_YELLOW':
+            humidifier_led.show(0, hex_to_rgb(COLOR_YELLOW))
+            await asleep_ms(HUMI_YELLOW_MS)
+            state = 'PHASE_RED'
+
+        elif state == 'PHASE_RED':
+            humidifier_led.show(0, hex_to_rgb(COLOR_RED))
+            await asleep_ms(HUMI_RED_MS)
+            humidifier_led.show(0, hex_to_rgb(COLOR_OFF))
+            humi_queue.pop(0)
+            state = 'IDLE'
 
 async def setup():
     create_task(task_blinky())
