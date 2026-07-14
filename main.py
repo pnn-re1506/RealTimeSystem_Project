@@ -80,19 +80,19 @@ async def task_blinky(): ...
 # Task 2: Read Sensor — DHT20 every 5s, enqueue to all consumers
 async def task_read_sensor():
     await data_mutex.acquire()
-        temp = await dht20.atemperature()
-        humi = await dht20.ahumidity()
-        data_mutex.release()
+    temp = await dht20.atemperature()
+    humi = await dht20.ahumidity()
+    data_mutex.release()
 
-        print('TEMP:', temp, '°C | HUMI:', humi, '%')
+    print('TEMP:', temp, '°C | HUMI:', humi, '%')
 
-        data = make_sensor_data(temp, humi)
+    data = make_sensor_data(temp, humi)
             
-        if len(humi_queue) == 0:
-            humi_queue.append(data)
-            humi_sem.release()
+    if len(humi_queue) == 0:
+        humi_queue.append(data)
+        humi_sem.release()
 
-        await asleep_ms(SENSOR_INTERVAL_MS)
+    await asleep_ms(SENSOR_INTERVAL_MS)
 
 # Task 3: LCD Display — show temp & humidity
 async def task_lcd(): ...
