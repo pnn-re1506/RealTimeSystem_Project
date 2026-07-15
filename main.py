@@ -117,16 +117,28 @@ async def task_lcd():
 
 # Task 4: Heater — 3-color threshold indicator
 async def task_heater():
+    state = 'IDLE'
     while True:
         await heater_sem.acquire()
         data = heater_queue.pop(0)
         temp = data['temperature']
 
         if temp < HEATER_COLD:
-            heater_led.show(0, hex_to_rgb(COLOR_RED))
+            new_state = 'COLD'
         elif temp < HEATER_HOT:
-            heater_led.show(0, hex_to_rgb(COLOR_GREEN))
+            new_state = 'SAFE'
         else:
+            new_state = 'HOT'
+
+        if new_state != state:
+            state = new_state
+            print('Heater state:', state)
+
+        if state == 'COLD':
+            heater_led.show(0, hex_to_rgb(COLOR_RED))
+        elif state == 'SAFE':
+            heater_led.show(0, hex_to_rgb(COLOR_GREEN))
+        elif state == 'HOT':
             heater_led.show(0, hex_to_rgb(COLOR_ORANGE))
 
 # Task 5: Cooler — GREEN 5s if temp > threshold
