@@ -90,10 +90,10 @@ async def task_read_sensor():
     print('TEMP:', temp, '°C | HUMI:', humi, '%')
 
     data = make_sensor_data(temp, humi)
-            
-    if len(humi_queue) == 0:
-        humi_queue.append(data)
-        humi_sem.release()
+    enqueue(heater_queue, heater_sem, data)
+    enqueue(cooler_queue, cooler_sem, data)
+    enqueue(humi_queue, humi_sem, data)
+    enqueue(lcd_queue, lcd_sem, data)
 
     await asleep_ms(SENSOR_INTERVAL_MS)
 
@@ -154,12 +154,11 @@ async def task_humidifier():
     while True:
         if state == 'IDLE':
             await humi_sem.acquire()
-            data = humi_queue[0]
+            data = humi_queue.pop(0)
             if data['humidity'] < HUMI_THRESH:
                 state = 'PHASE_GREEN'
             else:
                 humidifier_led.show(0, hex_to_rgb(COLOR_OFF))
-                humi_queue.pop(0)
 
         elif state == 'PHASE_GREEN':
             humidifier_led.show(0, hex_to_rgb(COLOR_GREEN))
@@ -175,7 +174,6 @@ async def task_humidifier():
             humidifier_led.show(0, hex_to_rgb(COLOR_RED))
             await asleep_ms(HUMI_RED_MS)
             humidifier_led.show(0, hex_to_rgb(COLOR_OFF))
-            humi_queue.pop(0)
             state = 'IDLE'
 
 async def setup():
