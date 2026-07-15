@@ -75,7 +75,10 @@ def enqueue(queue, sem, data):
         sem.release()
 
 # Task 1: Blinky — LED13 toggle every 1 second (independent)
-async def task_blinky(): ...
+async def task_blinky():
+    while True:
+        await asleep_ms(BLINKY_INTERVAL_MS)
+        led_D13.toggle()
 
 # Task 2: Read Sensor — DHT20 every 5s, enqueue to all consumers
 async def task_read_sensor():
@@ -95,7 +98,22 @@ async def task_read_sensor():
     await asleep_ms(SENSOR_INTERVAL_MS)
 
 # Task 3: LCD Display — show temp & humidity
-async def task_lcd(): ...
+async def task_lcd():
+    lcd1602.clear()
+    while True:
+        await lcd_sem.acquire()
+        data = lcd_queue.pop(0)
+        temp = data['temperature']
+        humi = data['humidity']
+
+        lcd1602.show('TEMP: ', 0, 0)
+        lcd1602.show(str(temp), 0, 6)
+        lcd1602.show(chr(0), 0, 11)
+        lcd1602.show('C', 0, 12)
+        
+        lcd1602.show('HUMI: ', 1, 0)
+        lcd1602.show(str(humi), 1, 6)
+        lcd1602.show('%', 1, 12)
 
 # Task 4: Heater — 3-color threshold indicator
 async def task_heater():
