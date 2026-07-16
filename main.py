@@ -167,10 +167,6 @@ async def task_humidifier():
     while True:
         if state == 'IDLE':
             await humi_sem.acquire()
-            # Flush stale readings — only keep the latest
-            while humi_sem.value > 0:
-                humi_sem.value -= 1
-                humi_queue.pop(0)
             data = humi_queue.pop(0)
             if data['humidity'] < HUMI_THRESH:
                 state = 'PHASE_GREEN'
